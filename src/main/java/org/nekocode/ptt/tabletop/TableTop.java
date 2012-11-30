@@ -1,5 +1,6 @@
 package org.nekocode.ptt.tabletop;
 
+import org.apache.log4j.Logger;
 import org.nekocode.ptt.TableTopType;
 import org.nekocode.ptt.objects.VisibleObject;
 
@@ -31,6 +32,8 @@ import java.util.List;
  * @author fanguad
  */
 public class TableTop extends JComponent {
+    private static final Logger logger = Logger.getLogger(TableTop.class);
+
     /**
      * Main image buffer.
      */
@@ -139,44 +142,34 @@ public class TableTop extends JComponent {
     private class FileDropListener implements DropTargetListener {
 
         /**
-         * Approves lists of files.  Changes border to indicate drag is in progress.
+         * Approves lists of files.
          *
          * @param dtde drag event
          */
         @Override
         public void dragEnter(DropTargetDragEvent dtde) {
             if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                setBorder(true);
                 dtde.acceptDrag(DnDConstants.ACTION_COPY_OR_MOVE);
             } else {
-                setBorder(false);
                 dtde.rejectDrag();
             }
         }
 
-        /**
-         * Changes border to indicate no drag is in progress.
-         *
-         * @param dte drop event
-         */
         @Override
         public void dragExit(DropTargetEvent dte) {
-            setBorder(false);
         }
 
         @Override
         public void drop(DropTargetDropEvent dtde) {
-            setBorder(false);
             if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
                 dtde.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
                 try {
-                    @SuppressWarnings("unchecked")
                     List<File> files = (List<File>) dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-                    workerThread.execute(new AddFiles(files));
+                    // TODO do stuff here
                 } catch (UnsupportedFlavorException e) {
-                    log.error("error processing file drop", e);
+                    logger.error("error processing file drop", e);
                 } catch (IOException e) {
-                    log.error("error processing file drop", e);
+                    logger.error("error processing file drop", e);
                 }
             } else {
                 dtde.rejectDrop();
@@ -189,7 +182,7 @@ public class TableTop extends JComponent {
 
         @Override
         public void dropActionChanged(DropTargetDragEvent dtde) {
-            log.debug("dropActionChanged: " + dtde.toString());
+            logger.debug("dropActionChanged: " + dtde.toString());
         }
     }
 }

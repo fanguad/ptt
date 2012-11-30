@@ -8,5 +8,4 @@ package org.nekocode.ptt;
 public enum TableTopType {
     CONTROLLER,
     VIEWER,
-    NONE
 }

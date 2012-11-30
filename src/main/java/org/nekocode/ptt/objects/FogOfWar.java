@@ -14,8 +14,8 @@ public class FogOfWar extends VisibleObject {
     @NotNull
     @Override
     public Painter<VisibleObject> getPainter(TableTopType type) {
-        if (this.seenBy == TableTopType.NONE) {
-            // only the controller is allowed to see this, but this painter is for the viewer
+        if (this.seenBy == TableTopType.CONTROLLER) {
+            // if the viewer can't see it, don't bother painting the object
             return EmptyPainter.getInstance();
         }
 

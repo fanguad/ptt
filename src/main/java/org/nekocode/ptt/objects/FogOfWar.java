@@ -1,9 +1,9 @@
 package org.nekocode.ptt.objects;
 
-import org.jetbrains.annotations.NotNull;
 import org.nekocode.ptt.TableTopType;
 import org.nekocode.ptt.painters.EmptyPainter;
 
+import javax.annotation.Nonnull;
 import javax.swing.Painter;
 import java.awt.geom.Rectangle2D;
 
@@ -11,7 +11,7 @@ import java.awt.geom.Rectangle2D;
  * Represents Fog of War.  A visible fog of war is translucent to the controller, but opaque to the viewer.
  */
 public class FogOfWar extends VisibleObject {
-    @NotNull
+    @Nonnull
     @Override
     public Painter<VisibleObject> getPainter(TableTopType type) {
         if (this.seenBy == TableTopType.CONTROLLER) {
@@ -22,7 +22,7 @@ public class FogOfWar extends VisibleObject {
         return null;
     }
 
-    @NotNull
+    @Nonnull
     @Override
     public Rectangle2D getBounds() {
         return null;  //To change body of implemented methods use File | Settings | File Templates.

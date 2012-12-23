@@ -1,10 +1,10 @@
 package org.nekocode.ptt.objects;
 
-import org.jetbrains.annotations.NotNull;
 import org.nekocode.ptt.TableTopType;
 import org.nekocode.ptt.painters.EmptyPainter;
 import org.nekocode.ptt.painters.ImagePainter;
 
+import javax.annotation.Nonnull;
 import javax.swing.Painter;
 import java.awt.Point;
 import java.awt.Toolkit;
@@ -37,7 +37,7 @@ public class Image extends VisibleObject {
     }
 
     @Override
-    @NotNull
+    @Nonnull
     public Painter<VisibleObject> getPainter(TableTopType type) {
         if (seenBy == TableTopType.CONTROLLER && type == TableTopType.VIEWER) {
             // only the controller is allowed to see this, but this painter is for the viewer
@@ -48,7 +48,7 @@ public class Image extends VisibleObject {
     }
 
     @Override
-    @NotNull
+    @Nonnull
     public Rectangle2D getBounds() {
         return bounds;
     }

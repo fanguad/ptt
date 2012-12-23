@@ -1,9 +1,9 @@
 package org.nekocode.ptt.objects;
 
-import org.jetbrains.annotations.NotNull;
 import org.nekocode.ptt.TableTopType;
 import org.nekocode.ptt.tabletop.TableTop;
 
+import javax.annotation.Nonnull;
 import javax.swing.Painter;
 import java.awt.geom.Rectangle2D;
 
@@ -24,7 +24,7 @@ public abstract class VisibleObject {
      * @param type type of tabletop to draw on
      * @return painter for this object
      */
-    @NotNull
+    @Nonnull
     public abstract Painter<VisibleObject> getPainter(TableTopType type);
 
     /**
@@ -39,7 +39,7 @@ public abstract class VisibleObject {
      *
      * @return bounding box
      */
-    @NotNull
+    @Nonnull
     public abstract Rectangle2D getBounds();
 
     /**

@@ -5,10 +5,7 @@ import org.nekocode.ptt.TableTopType;
 import org.nekocode.ptt.objects.VisibleObject;
 
 import javax.swing.JComponent;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DnDConstants;
@@ -17,8 +14,7 @@ import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
+import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -33,15 +29,16 @@ import java.util.List;
  */
 public class TableTop extends JComponent {
     private static final Logger logger = Logger.getLogger(TableTop.class);
+    public static final AffineTransform DEFAULT_TRANSFORM = new AffineTransform();
 
     /**
      * Main image buffer.
      */
-    private Image buffer1;
+    private BufferedImage buffer1;
     /**
      * Secondary image buffer.
      */
-    private Image buffer2;
+    private BufferedImage buffer2;
 
     private TableTopType type;
 
@@ -60,9 +57,14 @@ public class TableTop extends JComponent {
      * this should be independent between controller and viewer
      */
     private AffineTransform scaleTransform;
+    private double scale = 1;
 
     public TableTop(TableTopType type) {
         addComponentListener(new ResizeHandler());
+        ScrollZoomAdapter scrollZoomAdapter = new ScrollZoomAdapter();
+        addMouseListener(scrollZoomAdapter);
+        addMouseWheelListener(scrollZoomAdapter);
+        addMouseMotionListener(scrollZoomAdapter);
         this.type = type;
         objects = new ArrayList<>();
         centerTransform = new AffineTransform();
@@ -73,20 +75,23 @@ public class TableTop extends JComponent {
 
     }
 
-    public void repaint() {
-        Image target = buffer2;
+    public void redraw() {
+        BufferedImage target = buffer2;
         if (target == null) {
+//            logger.warn("Cannot repaint - buffer is null");
             return;
         }
 
         Graphics2D g2 = (Graphics2D) target.getGraphics();
         // save current transform
         AffineTransform previous = g2.getTransform();
+        g2.setTransform(DEFAULT_TRANSFORM);
+        g2.clearRect(0, 0, target.getWidth(), target.getHeight());
 
         // set transform for translate and scale
         AffineTransform transform = new AffineTransform();
+        transform.concatenate(centerTransform);
         transform.concatenate(scaleTransform);
-        transform.concatenate(centerTransform); // translate happens first, so is appended last
         g2.setTransform(transform);
 
         for (VisibleObject object : objects) {
@@ -96,6 +101,11 @@ public class TableTop extends JComponent {
 
         // reset previous transform
         g2.setTransform(previous);
+
+        buffer2 = buffer1;
+        buffer1 = target;
+
+        super.repaint();
     }
 
     @Override
@@ -149,7 +159,7 @@ public class TableTop extends JComponent {
         @Override
         public void dragEnter(DropTargetDragEvent dtde) {
             if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                dtde.acceptDrag(DnDConstants.ACTION_COPY_OR_MOVE);
+                dtde.acceptDrag(DnDConstants.ACTION_REFERENCE);
             } else {
                 dtde.rejectDrag();
             }
@@ -162,13 +172,18 @@ public class TableTop extends JComponent {
         @Override
         public void drop(DropTargetDropEvent dtde) {
             if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                dtde.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
+                dtde.acceptDrop(DnDConstants.ACTION_REFERENCE);
                 try {
                     List<File> files = (List<File>) dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-                    // TODO do stuff here
-                } catch (UnsupportedFlavorException e) {
-                    logger.error("error processing file drop", e);
-                } catch (IOException e) {
+
+                    for (File file : files) {
+                        logger.debug("Adding new file: " + file.getAbsolutePath());
+                        VisibleObject image = new org.nekocode.ptt.objects.Image(file.getAbsolutePath(), dtde.getLocation());
+                        objects.add(image);
+                    }
+                    redraw();
+
+                } catch (UnsupportedFlavorException | IOException e) {
                     logger.error("error processing file drop", e);
                 }
             } else {
@@ -183,6 +198,46 @@ public class TableTop extends JComponent {
         @Override
         public void dropActionChanged(DropTargetDragEvent dtde) {
             logger.debug("dropActionChanged: " + dtde.toString());
+        }
+    }
+
+    private class ScrollZoomAdapter extends MouseAdapter {
+        private Point startPoint;
+
+        @Override
+        public void mousePressed(MouseEvent e) {
+            if (e.getButton() == MouseEvent.BUTTON1)
+            {
+                startPoint = e.getPoint();
+                setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+            }
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            setCursor(Cursor.getDefaultCursor());
+        }
+
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            if ((e.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) == MouseEvent.BUTTON1_DOWN_MASK)
+            {
+                Point currentPoint = e.getPoint();
+                int xDiff = currentPoint.x - startPoint.x;
+                int yDiff = currentPoint.y - startPoint.y;
+                startPoint = currentPoint;
+
+                centerTransform.translate(xDiff, yDiff);
+                redraw();
+            }
+        }
+
+        @Override
+        public void mouseWheelMoved(MouseWheelEvent e) {
+            double clicks = e.getPreciseWheelRotation();
+            scale *= 1 + (clicks * .1);
+            scaleTransform.setToScale(scale, scale);
+            redraw();
         }
     }
 }

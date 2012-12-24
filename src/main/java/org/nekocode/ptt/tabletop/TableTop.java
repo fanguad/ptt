@@ -72,7 +72,6 @@ public class TableTop extends JComponent {
 
         @SuppressWarnings("unused") // the drop target needs to be created, but doesn't need to be attached to anything
         DropTarget dt = new DropTarget(this, DnDConstants.ACTION_COPY_OR_MOVE, new FileDropListener());
-
     }
 
     public void redraw() {

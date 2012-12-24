@@ -16,6 +16,8 @@ import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -75,7 +77,7 @@ public class TableTop extends JComponent {
     }
 
     public void redraw() {
-        BufferedImage target = buffer2;
+        BufferedImage target = buffer1;
         if (target == null) {
 //            logger.warn("Cannot repaint - buffer is null");
             return;
@@ -101,15 +103,15 @@ public class TableTop extends JComponent {
         // reset previous transform
         g2.setTransform(previous);
 
-        buffer2 = buffer1;
-        buffer1 = target;
+//        buffer2 = buffer1;
+//        buffer1 = target;
 
         super.repaint();
     }
 
     @Override
-    public void paint(Graphics g) {
-        super.paint(g);
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
 
         Image image = buffer1;
         if (image != null) {
@@ -175,14 +177,22 @@ public class TableTop extends JComponent {
                 try {
                     List<File> files = (List<File>) dtde.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
 
+                    // transform to convert from panel coordinates to tabletop coordinates
+                    AffineTransform transform = new AffineTransform();
+                    transform.concatenate(centerTransform);
+                    transform.concatenate(scaleTransform);
+                    transform = transform.createInverse();
+                    Point2D center2d = transform.transform(new Point2D.Double(dtde.getLocation().x, dtde.getLocation().y), null);
+                    Point center = new Point((int)center2d.getX(), (int)center2d.getY());
+
                     for (File file : files) {
                         logger.debug("Adding new file: " + file.getAbsolutePath());
-                        VisibleObject image = new org.nekocode.ptt.objects.Image(file.getAbsolutePath(), dtde.getLocation());
+                        VisibleObject image = new org.nekocode.ptt.objects.Image(file, center);
                         objects.add(image);
                     }
                     redraw();
 
-                } catch (UnsupportedFlavorException | IOException e) {
+                } catch (UnsupportedFlavorException | IOException | NoninvertibleTransformException e) {
                     logger.error("error processing file drop", e);
                 }
             } else {
@@ -234,8 +244,9 @@ public class TableTop extends JComponent {
         @Override
         public void mouseWheelMoved(MouseWheelEvent e) {
             double clicks = e.getPreciseWheelRotation();
-            scale *= 1 + (clicks * .1);
-            scaleTransform.setToScale(scale, scale);
+            scale -= clicks * .1;
+            double scaleBy = Math.pow(10, scale) / 10;
+            scaleTransform.setToScale(scaleBy, scaleBy);
             redraw();
         }
     }
